@@ -8,9 +8,11 @@ defmodule MontyPlugin.RegistryTest do
 
   alias MontyPlugin.Registry
 
+  # The registry process is the application's (`MontyPlugin.Application`), so the
+  # tests use the scope the node booted with. A registration whose plugin process
+  # has stopped is dropped by `:pg` itself, so one test's names do not reach the
+  # next.
   setup do
-    start_supervised!(Registry)
-
     description = %{
       "name" => "follow_chamfers",
       "kind" => :motor_policy,

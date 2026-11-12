@@ -9,6 +9,7 @@ defmodule MontyPlugin.MixProject do
       app: :ex_monty_plugin,
       version: @version,
       elixir: "~> 1.17",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
@@ -20,8 +21,14 @@ defmodule MontyPlugin.MixProject do
     ]
   end
 
+  # `test/support` is compiled into the application in the test build, because the
+  # cross-node test asks a second VM to start a module — and a module defined in a
+  # test file exists only in the memory of the VM that ran the test.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   def application do
-    [extra_applications: [:logger]]
+    [mod: {MontyPlugin.Application, []}, extra_applications: [:logger]]
   end
 
   defp deps do

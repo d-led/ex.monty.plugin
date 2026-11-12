@@ -58,8 +58,10 @@ defmodule MontyPlugin.Registry do
   @doc """
   The child spec that starts the `:pg` process under this scope.
 
-  `:pg` is an OTP module and has no `child_spec/1`, so a supervision tree that
-  wants it names the start function itself.
+  The package starts it already (`MontyPlugin.Application`), so an application
+  does not add this to its own tree — it exists for a test that wants the process
+  under its own supervisor. `:pg` is an OTP module and has no `child_spec/1`, which
+  is why the start function is named here.
   """
   @spec child_spec(keyword()) :: Supervisor.child_spec()
   def child_spec(_opts) do

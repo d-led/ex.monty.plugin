@@ -31,19 +31,19 @@ than routed — it runs thousands of operations a step, so it is compiled where 
 runs — while an experiment and a policy are called once per step, which is what
 makes a remote call free.
 
-## In a supervision tree
+## What it starts
 
-```elixir
-children = [
-  MontyPlugin.Registry,
-  # ...
-]
-```
+Adding the dependency is the whole of the setup: `MontyPlugin.Application` starts
+the one process this package needs — OTP's `:pg`, under the scope `PLUGIN_SCOPE`
+names — before anything that could ask it a question. A forgotten child would
+otherwise be a registry that answers `:noproc` on the first call, which says
+nothing about the plugin and everything about the boot.
 
-The registry's child is OTP's `:pg` process, started under the scope
-`PLUGIN_SCOPE` names: `:pg` is what knows a name on every node and forgets it when
-a node goes down, and a `Registry` is not — it names processes on the node that
-started it.
+`:pg` and not a `Registry`: `:pg` knows a name on every node and forgets it when a
+node goes down; a `Registry` names processes on the node that started it.
+
+`MontyPlugin.Registry.child_spec/1` is there for a test that wants the process
+under its own supervisor, not for an application to add again.
 
 ## Two variables, both read at boot
 
