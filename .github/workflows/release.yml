@@ -1,0 +1,38 @@
+name: release
+
+# A tag does two things, and only a tag: publishes the package to Hex —
+# `mix hex.publish`, which wants the `HEX_API_KEY` secret on this repository — and
+# attaches the source to a GitHub release, so the tag explains itself. Nothing is
+# published from a branch: `ci` proves a commit, a tag says it is a version.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+env:
+  # `mix hex.publish` publishes the docs as well as the package, and docs are built
+  # by ex_doc — a development dependency — so this job runs in `dev`.
+  MIX_ENV: dev
+  ELIXIR_VERSION: "1.20.5"
+  OTP_VERSION: "29.1"
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+      - run: mix deps.get
+      - run: mix test
+      - run: mix hex.publish --yes
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
