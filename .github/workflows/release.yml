@@ -7,7 +7,14 @@ name: release
 
 on:
   push:
-    tags: ["v*.*.*"]
+    tags:
+      - "v*.*.*"
+      - "v*.*.*-rc.*"
+      - "v*.*.*-beta.*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -57,9 +64,27 @@ jobs:
 
       - run: mix deps.get
       - run: mix test
-      - run: mix hex.publish --yes
+
+      # Resumable: a package that already carries this version is left alone, so a
+      # run that failed after the upload is re-run rather than re-tagged. Docs are
+      # built before the upload because `mix hex.publish` publishes them with the
+      # package, and a failed docs build after the upload would spend the version.
+      - name: Publish
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: |
+          set -e
+          version=$(tr -d '[:space:]' < VERSION)
+
+          if mix hex.info ex_monty_plugin "$version" > /dev/null 2>&1; then
+            echo "ex_monty_plugin $version is already published — nothing to publish"
+            exit 0
+          fi
+
+          mix docs
+          mix hex.publish --yes
+
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref, '-rc.') || contains(github.ref, '-beta.') }}
