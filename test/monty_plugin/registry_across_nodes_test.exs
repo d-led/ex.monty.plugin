@@ -31,6 +31,27 @@ defmodule MontyPlugin.RegistryAcrossNodesTest do
     assert {:ok, %{"placement" => :owner_only}} = provider.describe
   end
 
+  test "a plugin offered elsewhere is asked for on the node that offers it" do
+    peer = peer()
+    {:ok, plugin} = :rpc.call(peer, MontyPlugin.TestPlugin, :start_unlinked, [description()])
+    :ok = :rpc.call(peer, Registry, :register, [:motor_policy, "owner_only_policy", plugin])
+
+    assert {:ok, _provider} =
+             eventually(
+               fn -> Registry.lookup(:motor_policy, "owner_only_policy") end,
+               &match?({:ok, _}, &1)
+             )
+
+    # The question an `:owner_only` plugin asks: a B-rep cannot leave its node, so
+    # the address decides whether the call can be served at all.
+    assert {:ok, provider} = Registry.lookup(:motor_policy, "owner_only_policy", peer)
+    assert provider.node == peer
+
+    assert {:error, message} = Registry.lookup(:motor_policy, "owner_only_policy", node())
+    assert message =~ "not offered on #{node()}"
+    assert message =~ to_string(peer)
+  end
+
   test "a plugin withdrawn elsewhere leaves the list here" do
     peer = peer()
     {:ok, plugin} = :rpc.call(peer, MontyPlugin.TestPlugin, :start_unlinked, [description()])

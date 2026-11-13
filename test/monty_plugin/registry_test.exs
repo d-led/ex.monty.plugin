@@ -41,6 +41,24 @@ defmodule MontyPlugin.RegistryTest do
     assert Registry.providers(:experiment) == []
   end
 
+  test "a name asked for on a node that does not offer it says where it is offered", %{
+    plugin: plugin
+  } do
+    :ok = Registry.register(:motor_policy, "follow_chamfers", plugin)
+
+    assert {:ok, provider} = Registry.lookup(:motor_policy, "follow_chamfers", node())
+    assert provider.node == node()
+
+    assert {:error, message} = Registry.lookup(:motor_policy, "follow_chamfers", :other@nohost)
+    assert message =~ "not offered on other@nohost"
+    assert message =~ to_string(node())
+  end
+
+  test "a name nobody offers anywhere is told apart from one offered elsewhere" do
+    assert {:error, message} = Registry.lookup(:experiment, "nowhere", :other@nohost)
+    assert message =~ "it is offered on no node at all"
+  end
+
   test "a withdrawn plugin is no longer offered", %{plugin: plugin} do
     :ok = Registry.register(:motor_policy, "follow_chamfers", plugin)
     :ok = Registry.unregister(:motor_policy, "follow_chamfers", plugin)

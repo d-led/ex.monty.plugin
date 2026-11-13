@@ -17,7 +17,7 @@ to be able to ask a module what it is before it decides where to call it.
 | Module | What it answers |
 | --- | --- |
 | `MontyPlugin` | the contract: `describe/0` — name, kind, version, placement, needs — and `conforms?/1`, which names the field that is wrong |
-| `MontyPlugin.Registry` | which plugins the cluster offers, by name and kind, over `:pg`, and the same answer on every node |
+| `MontyPlugin.Registry` | which plugins the cluster offers, by name and kind, over `:pg`, and the same answer on every node; `lookup/3` asks for a name on a *named* node, which is what an `:owner_only` plugin needs |
 
 ```elixir
 %{

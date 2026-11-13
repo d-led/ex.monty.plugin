@@ -137,10 +137,28 @@ defmodule MontyPlugin.Registry do
 
   A name nobody offers is an error that names the ones there are, because the
   caller is usually a model that can pick another.
+
+  This answers *a* provider, which is right for an `:anywhere` plugin — any node
+  may answer — and wrong for an `:owner_only` one, where the address decides
+  whether the call can be served at all. That question is `lookup/3`.
   """
   @spec lookup(MontyPlugin.kind(), String.t()) :: {:ok, provider()} | {:error, String.t()}
   def lookup(kind, name) when is_kind(kind) and is_binary(name) do
     if enabled?(), do: found(kind, name), else: switched_off()
+  end
+
+  @doc """
+  The provider under a name, on a named node.
+
+  This is the question an `:owner_only` plugin asks: a motor policy that reads a
+  B-rep has to be called on the node that opened the part, and `lookup/2` answers
+  the first provider it finds — which may be the address of a copy that cannot
+  serve. The answer when it is not there names the nodes that do offer it, so a
+  caller can say which part is where instead of guessing.
+  """
+  @spec lookup(MontyPlugin.kind(), String.t(), node()) :: {:ok, provider()} | {:error, String.t()}
+  def lookup(kind, name, on) when is_kind(kind) and is_binary(name) and is_atom(on) do
+    if enabled?(), do: found(kind, name, on), else: switched_off()
   end
 
   defp found(kind, name) do
@@ -150,6 +168,26 @@ defmodule MontyPlugin.Registry do
 
       [pid | _rest] ->
         {:ok, provider(kind, name, pid)}
+    end
+  end
+
+  defp found(kind, name, on) do
+    case Enum.find(members(group(kind, name)), &(node(&1) == on)) do
+      nil ->
+        {:error,
+         "#{inspect(name)} is not offered on #{on}; it is offered on #{where(kind, name)}"}
+
+      pid ->
+        {:ok, provider(kind, name, pid)}
+    end
+  end
+
+  # Where a name is offered, as a sentence: the nodes, or the fact that nobody
+  # offers it at all — two different answers that one empty list would blur.
+  defp where(kind, name) do
+    case group(kind, name) |> members() |> Enum.map(&node/1) |> Enum.uniq() |> Enum.sort() do
+      [] -> "no node at all"
+      nodes -> Enum.map_join(nodes, ", ", &to_string/1)
     end
   end
 
