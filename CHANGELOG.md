@@ -22,5 +22,5 @@ The contract and the registry, on their own.
 - **A two-node test** — a plugin offered on a peer node is found here with its
   description, and one withdrawn there leaves the list here.
 
-Nothing here knows about geometry, Monty, or a CAD file: it is the part of a
+Nothing here knows about geometry, a CAD file, or a run: it is the part of a
 cluster that a policy, a learning module and an experiment have in common.

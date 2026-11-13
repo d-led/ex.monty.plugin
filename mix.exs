@@ -40,7 +40,8 @@ defmodule MontyPlugin.MixProject do
   end
 
   defp description do
-    "What a Monty plugin tells a cluster, and the registry that carries the " <>
+    "What an Elixir Monty Studio plugin tells a cluster, and the registry that " <>
+      "carries the " <>
       "answer between nodes: a behaviour for experiments, learning modules and " <>
       "motor policies, and a `:pg`-backed lookup that knows a name on every node " <>
       "and forgets it when a node goes down."

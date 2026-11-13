@@ -2,7 +2,7 @@ defmodule MontyPlugin do
   @moduledoc """
   What a plugin tells a cluster about itself, and what a cluster may rely on.
 
-  A Monty run is assembled from modules: the experiment that drives it, the
+  An Elixir Monty Studio run is assembled from modules: the experiment that drives it, the
   learning modules it steps, the motor policies that decide where to sense next.
   Not all of them live in the same node — a policy that reads a part's B-rep has
   to run where the part was opened — so a cluster has to be able to ask a module
