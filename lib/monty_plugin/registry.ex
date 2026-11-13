@@ -7,6 +7,18 @@ defmodule MontyPlugin.Registry do
   process group — a name joined on one node is visible on all of them, and a node
   that goes down takes its names with it.
 
+  `:pg` rather than `Horde.Registry`, and the difference is what a name means.
+  Horde is a distributed `Registry` over a δ-CRDT, and it is the right tool for the
+  question it answers: one owner per name, handed to another node when a node
+  leaves. It supports `keys: :unique` only, and when two nodes register one name it
+  settles the conflict by sending the loser an exit signal. A plugin name is
+  deliberately *not* unique — every node of an estate may offer `follow_chamfers`,
+  and which of them can answer depends on where the part was opened — so the second
+  registration is a second provider, not a dead process. `:pg` holds exactly that:
+  many members per key, and a member is forgotten when its process or its node goes
+  away. A name that must have one owner (a run, a worker) is Horde's question, not
+  this one; the two sit in one cluster without argument.
+
   ## Two variables, both read at boot
 
   12-factor says the cluster a node belongs to is a start-up decision, so this
