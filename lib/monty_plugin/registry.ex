@@ -48,6 +48,9 @@ defmodule MontyPlugin.Registry do
   @default_scope :monty_plugins
   @timeout 5_000
 
+  # The tag a plugin host advertises, and the prefix of the per-kind ones.
+  @plugin "plugin"
+
   # The same three atoms `MontyPlugin.kinds/0` answers, repeated because a guard
   # cannot call a function. A test holds the two lists to each other, so the copy
   # cannot drift in silence.
@@ -133,6 +136,64 @@ defmodule MontyPlugin.Registry do
   end
 
   @doc """
+  What this node tells another node's poller: the questions a cluster asks every
+  peer, answered by a plugin host.
+
+  A studio's node list asks each peer for its version, its capability tags and
+  where it answers. A plugin host is not that application's code, so it has no
+  `identity/0` of its own to answer with — and without this one it is a peer that
+  looks dead while its plugins are being offered. This is the same three questions
+  in the same words from the package the host does have, so a poller can ask twice
+  and mean one thing.
+
+  The tags are **derived from what is registered** rather than declared in an
+  environment variable: `plugin` says this node hosts plugins, `plugin:<kind>` says
+  which kinds it offers. A node that registered nothing is a plugin host with
+  nothing on offer, and its tags say exactly that.
+
+  `web` is `nil`: a plugin host need not answer HTTP, and a poller that is told
+  nothing is a poller that names the node rather than linking to it.
+  """
+  @spec identity() :: %{
+          node: node(),
+          version: String.t(),
+          capabilities: [String.t()],
+          web: nil,
+          plugins: [%{String.t() => String.t()}]
+        }
+  def identity do
+    offered = offered()
+
+    %{
+      node: node(),
+      version: version(),
+      capabilities: capabilities(offered),
+      web: nil,
+      plugins: offered
+    }
+  end
+
+  @doc """
+  What this node offers, as the kinds and names a peer can read.
+
+  Read from the groups rather than from the providers: a poller asks every three
+  seconds, and asking each plugin to describe itself that often would be a
+  `GenServer.call` per plugin per poll for an answer this does not use.
+  """
+  @spec offered() :: [%{String.t() => String.t()}]
+  def offered do
+    if enabled?() do
+      scope()
+      |> :pg.which_groups()
+      |> Enum.filter(fn {kind, _name} -> is_kind(kind) end)
+      |> Enum.sort()
+      |> Enum.map(fn {kind, name} -> %{"kind" => Atom.to_string(kind), "name" => name} end)
+    else
+      []
+    end
+  end
+
+  @doc """
   The one provider under a name.
 
   A name nobody offers is an error that names the ones there are, because the
@@ -194,6 +255,23 @@ defmodule MontyPlugin.Registry do
   defp switched_off do
     {:error,
      "plugin discovery is off on this node (PLUGIN_DISCOVERY=#{inspect(System.get_env("PLUGIN_DISCOVERY"))})"}
+  end
+
+  # One tag that says the node hosts plugins, and one per kind it offers. The
+  # vocabulary is a cluster's own (`plugin:learning_module` in a studio's node
+  # list), and it is built here from the registry so it cannot say something the
+  # registry does not.
+  defp capabilities(offered) do
+    kinds = offered |> Enum.map(& &1["kind"]) |> Enum.uniq() |> Enum.sort()
+
+    Enum.sort([@plugin | Enum.map(kinds, &"#{@plugin}:#{&1}")])
+  end
+
+  defp version do
+    case Application.spec(:ex_monty_plugin, :vsn) do
+      nil -> "unknown"
+      vsn -> to_string(vsn)
+    end
   end
 
   defp group(kind, name), do: {kind, name}

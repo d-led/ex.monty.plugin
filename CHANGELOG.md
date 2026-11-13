@@ -2,7 +2,17 @@
 
 ## 0.1.1
 
-The name, said out loud.
+The name, said out loud, and a node that can be seen.
+
+### Added
+
+- **`MontyPlugin.Registry.identity/0`** — what a plugin host tells another node's
+  poller: this node's name, the package's version, and the tags it derives from
+  what is registered rather than from an environment variable (`plugin`, and
+  `plugin:<kind>` per kind offered). A studio's node list asks every peer for its
+  version and its tags with one `:rpc`; without this answer a plugin host is a
+  peer that looks dead while it is offering three plugins, and with it the list
+  can ask twice and mean one thing. `offered/0` is the same list on its own.
 
 ### Changed
 

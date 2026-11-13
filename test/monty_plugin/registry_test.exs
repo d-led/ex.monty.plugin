@@ -119,6 +119,38 @@ defmodule MontyPlugin.RegistryTest do
     assert %{id: :pg, start: {:pg, :start_link, [:monty_plugins]}} = Registry.child_spec([])
   end
 
+  test "the node tells a peer what it is, and what it offers, as one answer", %{plugin: plugin} do
+    :ok = Registry.register(:motor_policy, "follow_chamfers", plugin)
+
+    identity = Registry.identity()
+
+    assert identity.node == node()
+    assert identity.version == to_string(Application.spec(:ex_monty_plugin, :vsn))
+    assert identity.plugins == [%{"kind" => "motor_policy", "name" => "follow_chamfers"}]
+    refute identity.web
+  end
+
+  test "the tags are what is registered: one for hosting plugins, one per kind", %{
+    plugin: plugin
+  } do
+    assert Registry.identity().capabilities == ["plugin"]
+
+    :ok = Registry.register(:motor_policy, "follow_chamfers", plugin)
+
+    assert Registry.identity().capabilities == ["plugin", "plugin:motor_policy"]
+  end
+
+  test "a host told not to take part offers nothing, and still answers", %{plugin: plugin} do
+    :ok = Registry.register(:motor_policy, "follow_chamfers", plugin)
+
+    System.put_env("PLUGIN_DISCOVERY", "none")
+    on_exit(fn -> System.delete_env("PLUGIN_DISCOVERY") end)
+
+    assert Registry.identity().node == node()
+    assert Registry.identity().plugins == []
+    assert Registry.identity().capabilities == ["plugin"]
+  end
+
   defmodule Plugin do
     @moduledoc false
     use GenServer
