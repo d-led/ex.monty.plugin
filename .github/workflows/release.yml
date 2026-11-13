@@ -28,6 +28,33 @@ jobs:
         with:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
+
+      # The tag is a claim and `VERSION` is the file it claims about. A tag that
+      # disagrees with the tree publishes a number nobody reviewed, so it stops
+      # here — before the secret, before the release, before Hex.
+      - name: the tag agrees with VERSION
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(tr -d '[:space:]' < VERSION)
+          if [ "$tag" != "$version" ]; then
+            echo "::error::the tag says $tag, VERSION says $version — bump the version and re-tag"
+            exit 1
+          fi
+          echo "tag $GITHUB_REF_NAME is VERSION $version"
+
+      # Before the work rather than after it: a repository without the secret is
+      # a release that cannot happen, and finding that out from `mix hex.publish`
+      # costs a full build to read an authentication error.
+      - name: the secret this job publishes with
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: |
+          if [ -z "$HEX_API_KEY" ]; then
+            echo "::error::HEX_API_KEY is not set on this repository, so a tag cannot publish."
+            echo "Add it with: gh secret set HEX_API_KEY -R \${{ github.repository }}"
+            exit 1
+          fi
+
       - run: mix deps.get
       - run: mix test
       - run: mix hex.publish --yes

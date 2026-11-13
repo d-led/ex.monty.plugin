@@ -78,3 +78,26 @@ end
 ```
 
 Elixir only: no NIF, no geometry, no Monty.
+
+## Releasing
+
+Nothing is published from a branch: `ci` proves a commit, a tag says it is a
+version. The version lives in `VERSION` and is written into `mix.exs` (and the
+dependency line above) by the script that moves it:
+
+```bash
+elixir scripts/release.exs bump patch     # 0.1.0 -> 0.1.1, in every file
+git add -A && git commit -m "release: 0.1.1" && git push
+./scripts/tag_and_push_version.sh          # refuses a dirty tree or red CI
+```
+
+The tag is what `.github/workflows/release.yml` publishes from, and that job needs
+the `HEX_API_KEY` secret on this repository:
+
+```bash
+gh secret set HEX_API_KEY -R d-led/ex_monty_plugin
+```
+
+Until the secret is there the tag job stops with that sentence rather than with an
+authentication error from Hex. A tag that disagrees with `VERSION` stops it too,
+before anything is built.
