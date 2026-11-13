@@ -42,6 +42,10 @@ jobs:
       # and then the tag is refused — so the disagreement is caught on the push
       # that made it.
       - run: elixir scripts/release.exs check
+      # The tarball a tag would publish, built on every push: a `files:` entry that
+      # names a file the repository no longer has is a package with half its
+      # documentation in it, and a tag is the wrong place to find that out.
+      - run: mix hex.build
 
   test:
     runs-on: ubuntu-24.04
