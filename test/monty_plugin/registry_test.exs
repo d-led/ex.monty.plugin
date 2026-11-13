@@ -151,6 +151,19 @@ defmodule MontyPlugin.RegistryTest do
     assert Registry.identity().capabilities == ["plugin"]
   end
 
+  # A plugin's `needs` is answered against the host's tags, so a host that
+  # carried nothing would make every need unanswerable — which is what a host
+  # whose tags came only from its own registry did.
+  test "a host says what it carries, so a plugin's needs can be answered", %{plugin: plugin} do
+    System.put_env("MONTY_CAPABILITIES", "gpu")
+    on_exit(fn -> System.delete_env("MONTY_CAPABILITIES") end)
+
+    :ok = Registry.register(:motor_policy, "follow_chamfers", plugin)
+
+    assert "gpu" in Registry.identity().capabilities
+    assert "plugin:motor_policy" in Registry.identity().capabilities
+  end
+
   defmodule Plugin do
     @moduledoc false
     use GenServer

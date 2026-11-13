@@ -146,10 +146,14 @@ defmodule MontyPlugin.Registry do
   in the same words from the package the host does have, so a poller can ask twice
   and mean one thing.
 
-  The tags are **derived from what is registered** rather than declared in an
-  environment variable: `plugin` says this node hosts plugins, `plugin:<kind>` says
-  which kinds it offers. A node that registered nothing is a plugin host with
-  nothing on offer, and its tags say exactly that.
+  The tags are what is registered plus what the host carries: `plugin` says this
+  node hosts plugins, `plugin:<kind>` says which kinds it offers, and
+  `MontyPlugin.Capabilities.carried/0` adds the rest — the framework packages on
+  this node's code path (`monty`, `quiddity`, `cadmpeg`) and the machine tags a
+  deployment wrote in `MONTY_CAPABILITIES`. A node that registered nothing is a
+  plugin host with nothing on offer, and its tags still say what it could serve.
+  That is the half a plugin's `needs` is checked against, and without it `needs`
+  could only ever be empty.
 
   `web` is `nil`: a plugin host need not answer HTTP, and a poller that is told
   nothing is a poller that names the node rather than linking to it.
@@ -257,14 +261,16 @@ defmodule MontyPlugin.Registry do
      "plugin discovery is off on this node (PLUGIN_DISCOVERY=#{inspect(System.get_env("PLUGIN_DISCOVERY"))})"}
   end
 
-  # One tag that says the node hosts plugins, and one per kind it offers. The
+  # One tag that says the node hosts plugins, one per kind it offers, and what
+  # the host carries — the tags a plugin's `needs` is checked against. The
   # vocabulary is a cluster's own (`plugin:learning_module` in a studio's node
-  # list), and it is built here from the registry so it cannot say something the
-  # registry does not.
+  # list); the plugin tags are built here from the registry so they cannot say
+  # something the registry does not, and the rest is `Capabilities`' answer.
   defp capabilities(offered) do
     kinds = offered |> Enum.map(& &1["kind"]) |> Enum.uniq() |> Enum.sort()
+    plugin_tags = [@plugin | Enum.map(kinds, &"#{@plugin}:#{&1}")]
 
-    Enum.sort([@plugin | Enum.map(kinds, &"#{@plugin}:#{&1}")])
+    Enum.sort(Enum.uniq(plugin_tags ++ MontyPlugin.Capabilities.carried()))
   end
 
   defp version do
