@@ -19,3 +19,6 @@ erl_crash.dump
 # Mirrors and local tools
 /tmp
 /priv/plts
+
+# `mix hex.build` writes the tarball a release would publish; it is built, not kept.
+ex_monty_plugin-*.tar
