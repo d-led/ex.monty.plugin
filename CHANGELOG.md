@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.1
+
+The name, said out loud.
+
+### Changed
+
+- **The docs call the package the Elixir Monty Studio Plugin.** "Monty" alone is the
+  upstream project's reserved name, so the prose names the product (an Elixir Monty
+  Studio plugin, and a run of one) and calls the ported upstream code "the
+  framework's". Module names, the app atom and the package name are unchanged — the
+  port is module for module.
+
 ## 0.1.0
 
 The contract and the registry, on their own.

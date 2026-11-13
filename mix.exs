@@ -1,7 +1,7 @@
 defmodule MontyPlugin.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/d-led/ex.monty.plugin"
 
   def project do
@@ -16,7 +16,7 @@ defmodule MontyPlugin.MixProject do
       deps: deps(),
       dialyzer: [plt_add_apps: [:mix, :ex_unit]],
       docs: docs(),
-      name: "ExMontyPlugin",
+      name: "Elixir Monty Studio Plugin",
       source_url: @source_url
     ]
   end

@@ -77,7 +77,7 @@ but unusable" look the same to whoever is choosing.
 ```elixir
 def deps do
   [
-    {:ex_monty_plugin, "~> 0.1"}
+    {:ex_monty_plugin, "~> 0.1.1"}
   ]
 end
 ```
