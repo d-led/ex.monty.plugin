@@ -4,6 +4,15 @@
 
 The front page is for plugin authors, the rules are for whoever changes it.
 
+### Fixed
+
+- **`Registry.offered/0` read every peer's plugins, not this host's.** `:pg`
+  replicates a scope across the cluster, so `which_groups/0` made every host
+  advertise all of them: two plugin hosts in a live cluster each claimed all six
+  of the other's, and a studio's catalogue therefore said one node's experiment
+  came from another. It reads `which_local_groups/0` now, and a host that leaves
+  takes its own with it, because they were never anybody else's.
+
 ### Changed
 
 - `README.md` now opens with the question the package exists to answer and a
