@@ -74,6 +74,26 @@ defmodule MontyPlugin.RegistryAcrossNodesTest do
     assert message =~ ~s(no experiment called "gone_soon")
   end
 
+  # `offered/0` is what a peer reads to learn what this node brings, and it is the
+  # half a catalogue lists. `:pg` replicates a scope's groups across the cluster,
+  # so reading all of them made every host claim every peer's plugins — which is
+  # how one node's experiment came to be shown as another node's.
+  test "a node offers its own plugins and not its peers'" do
+    peer = peer()
+    {:ok, plugin} = :rpc.call(peer, MontyPlugin.TestPlugin, :start_unlinked, [description()])
+    :ok = :rpc.call(peer, Registry, :register, [:experiment, "theirs.not_ours", plugin])
+
+    # The registration is visible from here — that is the package's whole point …
+    assert {:ok, _provider} =
+             eventually(
+               fn -> Registry.lookup(:experiment, "theirs.not_ours") end,
+               &match?({:ok, _}, &1)
+             )
+
+    # … and it is still theirs to offer.
+    assert Registry.offered() == []
+  end
+
   defp description do
     %{
       "name" => "far_policy",

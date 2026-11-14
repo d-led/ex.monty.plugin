@@ -183,12 +183,19 @@ defmodule MontyPlugin.Registry do
   Read from the groups rather than from the providers: a poller asks every three
   seconds, and asking each plugin to describe itself that often would be a
   `GenServer.call` per plugin per poll for an answer this does not use.
+
+  **Local** groups, because the question is what *this* node offers. `:pg`
+  replicates a scope's groups across the cluster, so reading them all made every
+  host advertise every peer's plugins: two plugin hosts in a live cluster each
+  claimed all six of the other's, and a studio's catalogue therefore said one
+  node's experiment came from another (`"From node"`). A host that leaves now
+  takes its own with it, because they were never anybody else's.
   """
   @spec offered() :: [%{String.t() => String.t()}]
   def offered do
     if enabled?() do
       scope()
-      |> :pg.which_groups()
+      |> :pg.which_local_groups()
       |> Enum.filter(fn {kind, _name} -> is_kind(kind) end)
       |> Enum.sort()
       |> Enum.map(fn {kind, name} -> %{"kind" => Atom.to_string(kind), "name" => name} end)
