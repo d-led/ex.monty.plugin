@@ -1,7 +1,7 @@
 defmodule MontyPlugin.MixProject do
   use Mix.Project
 
-  @version "0.1.2"
+  @version "0.1.3"
   @source_url "https://github.com/d-led/ex.monty.plugin"
 
   def project do
@@ -60,7 +60,13 @@ defmodule MontyPlugin.MixProject do
     [
       main: "readme",
       source_ref: "main",
-      extras: ["README.md", "CHANGELOG.md"]
+      extras: ["README.md", "CHANGELOG.md", "docs/development.md"],
+      groups_for_modules: [
+        "The contract": [MontyPlugin],
+        Registry: [MontyPlugin.Registry],
+        Capabilities: [MontyPlugin.Capabilities],
+        "What the package starts": [MontyPlugin.Application]
+      ]
     ]
   end
 end

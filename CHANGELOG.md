@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.1.3
+
+The front page is for plugin authors, the rules are for whoever changes it.
+
+### Changed
+
+- `README.md` now opens with the question the package exists to answer and a
+  plugin that answers it, instead of with a paragraph about where the
+  documentation is generated from. The registry table, the two boot variables and
+  the provider example stay; `Install` moved up, because that is what a reader
+  does next.
+- It also gained what a published package was missing: a licence section, a table
+  of where each other question is answered, and what this is *not* — it carries
+  no call, supervises no plugin, and chooses none.
+- Everything about changing the package moved to `docs/development.md`: the
+  layout, why `:pg` rather than a `Registry` and what that costs, the cross-node
+  test and how CI runs it, and releasing.
+- The API reference groups its modules — `The contract`, `Registry`,
+  `Capabilities`, `What the package starts` — instead of one loose list.
+
+## 0.1.2
+
+`needs` can be answered: a host says what it carries.
+
+### Added
+
+- **`MontyPlugin.Capabilities`** — the other half of `needs`: the packages on the
+  node's code path, by the name `needs` uses (`ex_tbp_monty_core` is `monty`,
+  `ex_quiddity` is `quiddity`, `ex_cadmpeg` is `cadmpeg`), asked of
+  `Application` so it is a fact about the build, plus `MONTY_CAPABILITIES`
+  reported as written. `MontyPlugin.Registry.identity/0` merges both into the tags
+  it publishes, so no caller changes.
+
 ## 0.1.1
 
 The name, said out loud, and a node that can be seen.
