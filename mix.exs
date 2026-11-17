@@ -1,7 +1,7 @@
 defmodule MontyPlugin.MixProject do
   use Mix.Project
 
-  @version "0.1.3"
+  @version "0.1.4"
   @source_url "https://github.com/d-led/ex.monty.plugin"
 
   def project do

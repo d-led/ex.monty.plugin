@@ -47,7 +47,7 @@ makes a remote call free.
 ```elixir
 def deps do
   [
-    {:ex_monty_plugin, "~> 0.1"}
+    {:ex_monty_plugin, "~> 0.1.4"}
   ]
 end
 ```
