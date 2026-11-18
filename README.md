@@ -1,14 +1,13 @@
 # ex_monty_plugin
 
-What a plugin tells a Monty Studio cluster about itself, and the registry that
+What a module in a Monty Studio cluster says about itself, and the registry that
 carries the answer between nodes.
 
-A run is assembled from modules — the experiment that drives it, the learning
-modules it steps, the motor policies that decide where to sense next — and they
-do not all live in the same node. A policy that reads a part's B-rep has to run
-where the part was opened, because a B-rep handle cannot leave its node. So a
-cluster has to be able to ask a module what it is before it decides where to
-call it. That question, and its answer, are this package.
+A run is assembled from modules — the experiment, the learning modules it steps,
+the motor policies that choose where to sense next — and they do not all live in
+the same node. A policy that reads a part's B-rep has to run where the part was
+opened, because a B-rep handle cannot leave its node. So a cluster asks a module
+what it is before it decides where to call it.
 
 ```elixir
 defmodule FollowChamfers do
@@ -31,33 +30,27 @@ MontyPlugin.conforms?(FollowChamfers.describe())
 #=> :ok
 ```
 
-| Module | What it answers |
-| --- | --- |
-| `MontyPlugin` | the contract: `describe/0` — name, kind, version, placement, needs — and `conforms?/1`, which names the field that is wrong |
-| `MontyPlugin.Registry` | which plugins the cluster offers, by name and kind, over `:pg`, and the same answer on every node; `lookup/3` asks for a name on a *named* node, which is what an `:owner_only` plugin needs |
+| module                 | what it answers                                                                                                                                           |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MontyPlugin`          | the contract: `describe/0` — name, kind, version, placement, needs — and `conforms?/1`, which names the field that is wrong                               |
+| `MontyPlugin.Registry` | which plugins the cluster offers, by name and kind, over `:pg`; `lookup/3` asks for a name on a _named_ node, which is what an `:owner_only` plugin needs |
 
-The three kinds are `:experiment`, `:learning_module` and `:motor_policy`;
-placement is `:anywhere` or `:owner_only`. A learning module is advertised rather
-than routed — it runs thousands of operations a step, so it is compiled where it
-runs — while an experiment and a policy are called once per step, which is what
-makes a remote call free.
+Kinds are `:experiment`, `:learning_module` and `:motor_policy`; placement is
+`:anywhere` or `:owner_only`. A learning module is advertised and not routed — it
+runs thousands of operations a step, so it is compiled where it runs — while an
+experiment and a policy are called once per step, which is what makes a remote
+call free.
 
 ## Install
 
 ```elixir
-def deps do
-  [
-    {:ex_monty_plugin, "~> 0.1.4"}
-  ]
-end
+{:ex_monty_plugin, "~> 0.1.4"}
 ```
 
-Elixir only: no NIF, no geometry, no Monty. Adding the dependency is the whole of
-the setup — `MontyPlugin.Application` starts the one process this package needs,
-OTP's `:pg`, under the scope `PLUGIN_SCOPE` names, before anything that could ask
-it a question.
+Elixir only. The dependency is the whole setup: `MontyPlugin.Application` starts
+`MontyPlugin.Registry` on OTP's `:pg` before anything can ask it a question.
 
-## What a provider is
+## A provider
 
 A plugin is a process that answers one call:
 
@@ -66,63 +59,38 @@ def handle_call(:describe, _from, state), do: {:reply, MyPlugin.describe(), stat
 ```
 
 The answer is held to `MontyPlugin.conforms?/1`. A plugin that answers unusably is
-still listed, with the reason — hiding it would make "nothing there" and "there
-but unusable" look the same to whoever is choosing.
+still listed, with the reason: "nothing there" and "there but unusable" are
+different facts to whoever is choosing.
 
 ## Two variables, both read at boot
 
-| variable           | what it does                                                                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PLUGIN_SCOPE`     | the `:pg` scope name (default `monty_plugins`). Two systems sharing a cluster that must not see each other's plugins differ here, exactly as they differ in node name |
-| `PLUGIN_DISCOVERY` | `pg` (default) or `none`. `none` is a deployment that runs its own built-in work and takes no part in a cluster: registration does nothing and a lookup says so, rather than looking like an empty cluster |
+| variable           | what it does                                                                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PLUGIN_SCOPE`     | the `:pg` scope name (default `monty_plugins`). Two systems sharing a cluster that must not see each other's plugins differ here, exactly as they differ in node name                      |
+| `PLUGIN_DISCOVERY` | `pg` (default) or `none`. `none` is a deployment that runs its own built-in work and takes no part in a cluster: registration does nothing and a lookup says so, rather than looking empty |
 
 A node that is not distributed is a cluster of one, which is a supported
-deployment — the registry answers with what that node offers and nothing else.
+deployment: the registry answers with what that node offers and nothing else.
+
+The registry does not carry the call, supervise a provider, or rank two of them.
+It answers _where_ a plugin is; the call is the caller's, with the `:erpc` or
+`GenServer.call/3` it already uses.
 
 ## Where to find what
 
-| Question                                          | Where                                                                                 |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| The contract a plugin implements                  | [`MontyPlugin`](https://hexdocs.pm/ex_monty_plugin/MontyPlugin.html)                   |
-| Which plugins the cluster offers, and how to ask  | [`MontyPlugin.Registry`](https://hexdocs.pm/ex_monty_plugin/MontyPlugin.Registry.html) |
-| What a plugin can require of its host             | [`MontyPlugin.Capabilities`](https://hexdocs.pm/ex_monty_plugin/MontyPlugin.Capabilities.html) |
-| The process this package starts                   | [`MontyPlugin.Application`](https://hexdocs.pm/ex_monty_plugin/MontyPlugin.Application.html) |
-| What changed, release by release                  | [`CHANGELOG`](https://hexdocs.pm/ex_monty_plugin/changelog.html)                       |
-| Working on the package: tests, CI, releasing      | [`development`](https://hexdocs.pm/ex_monty_plugin/development.html)                   |
+| question                                | where                                                                                          |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| the contract a plugin implements        | [`MontyPlugin`](https://hexdocs.pm/ex_monty_plugin/MontyPlugin.html)                           |
+| what the cluster offers, and how to ask | [`MontyPlugin.Registry`](https://hexdocs.pm/ex_monty_plugin/MontyPlugin.Registry.html)         |
+| what a plugin can require of its host   | [`MontyPlugin.Capabilities`](https://hexdocs.pm/ex_monty_plugin/MontyPlugin.Capabilities.html) |
+| what changed, release by release        | [`CHANGELOG`](https://hexdocs.pm/ex_monty_plugin/changelog.html)                               |
+| working on the package                  | [`development`](https://hexdocs.pm/ex_monty_plugin/development.html)                           |
 
-The API by module — and the same content as [`llms.txt`](https://d-led.github.io/ex.monty.plugin/llms.txt)
-for a model with no browser — is generated by `mix docs` and published at
-[d-led.github.io/ex.monty.plugin](https://d-led.github.io/ex.monty.plugin/) from
-`main`; the released version is on [HexDocs](https://hexdocs.pm/ex_monty_plugin).
-
-## What this is not
-
-- It does not carry a call. `MontyPlugin.Registry` answers *where* a plugin is;
-  making the call is the caller's, with whatever `:erpc` or `GenServer.call/3` it
-  already uses.
-- It does not supervise plugins. A provider registers and unregisters itself, and
-  `:pg` forgets a node's names when the node goes down, which is the whole of the
-  liveness story here.
-- It does not choose. Nothing ranks plugins, scores their capabilities or falls
-  back to a second one — that belongs to whoever is assembling a run.
-
-## Citation
-
-This is the contract a Monty Studio cluster asks its modules, so the paper that
-describes Monty is the one to cite. The package is citable too:
-[`CITATION.cff`](CITATION.cff) is what GitHub's *Cite this repository* button
-reads, and Zenodo mints a DOI for each release.
-
-```bibtex
-@article{clay2024thousandbrains,
-  title   = {The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
-  author  = {Clay, Viviane and Leadholm, Niels and Hawkins, Jeff},
-  journal = {arXiv preprint arXiv:2412.18354},
-  year    = {2024},
-  url     = {https://arxiv.org/abs/2412.18354}
-}
-```
+`mix docs` generates the same content as [`llms.txt`](https://d-led.github.io/ex.monty.plugin/llms.txt),
+published at [d-led.github.io/ex.monty.plugin](https://d-led.github.io/ex.monty.plugin/) from `main`;
+the released version is on [HexDocs](https://hexdocs.pm/ex_monty_plugin).
 
 ## Licence
 
-MPL-2.0 (`LICENSE`).
+MPL-2.0 (`LICENSE`). The paper this contract serves is in [`CITATION.cff`](CITATION.cff),
+which GitHub's _Cite this repository_ button reads; Zenodo mints a DOI per release.
